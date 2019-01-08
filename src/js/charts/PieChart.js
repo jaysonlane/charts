@@ -65,9 +65,9 @@ export default class PieChart extends BaseChart {
 			y:Math.cos(angle * ANGLE_RATIO) * radius,
 		};
 	}
-	makeArcPath(startPosition,endPosition){
+	makeArcPath(startPosition,endPosition,largeArc=0){
 		const{centerX,centerY,radius,clockWise} = this;
-		return `M${centerX} ${centerY} L${centerX+startPosition.x} ${centerY+startPosition.y} A ${radius} ${radius} 0 0 ${clockWise ? 1 : 0} ${centerX+endPosition.x} ${centerY+endPosition.y} z`;
+		return `M${centerX} ${centerY} L${centerX+startPosition.x} ${centerY+startPosition.y} A ${radius} ${radius} 0 ${largeArc} ${clockWise ? 1 : 0} ${centerX+endPosition.x} ${centerY+endPosition.y} z`;
 	}
 	make_graph_components(init){
 		const{radius,clockWise} = this;
@@ -80,6 +80,12 @@ export default class PieChart extends BaseChart {
 		this.slice_totals.map((total, i) => {
 			const startAngle = curAngle;
 			const originDiffAngle = (total / this.grand_total) * FULL_ANGLE;
+
+			let largeArc = 0;
+			if(originDiffAngle > 180){
+				largeArc = 1;
+			}
+
 			const diffAngle = clockWise ? -originDiffAngle : originDiffAngle;
 			const endAngle = curAngle = curAngle + diffAngle;
 			const startPosition = PieChart.getPositionByAngle(startAngle,radius);
@@ -93,7 +99,7 @@ export default class PieChart extends BaseChart {
 				curStart = startPosition;
 				curEnd = endPosition;
 			}
-			const curPath = this.makeArcPath(curStart,curEnd);
+			const curPath = this.makeArcPath(curStart, curEnd, largeArc);
 			let slice = makePath(curPath, 'pie-path', 'none', this.colors[i]);
 			slice.style.transition = 'transform .3s;';
 			this.draw_area.appendChild(slice);
