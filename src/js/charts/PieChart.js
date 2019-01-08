@@ -65,7 +65,7 @@ export default class PieChart extends BaseChart {
 			y:Math.cos(angle * ANGLE_RATIO) * radius,
 		};
 	}
-	makeArcPath(startPosition,endPosition,largeArc=0){
+	makeArcPath(startPosition,endPosition,largeArc){
 		const{centerX,centerY,radius,clockWise} = this;
 		return `M${centerX} ${centerY} L${centerX+startPosition.x} ${centerY+startPosition.y} A ${radius} ${radius} 0 ${largeArc} ${clockWise ? 1 : 0} ${centerX+endPosition.x} ${centerY+endPosition.y} z`;
 	}
@@ -82,7 +82,7 @@ export default class PieChart extends BaseChart {
 			const originDiffAngle = (total / this.grand_total) * FULL_ANGLE;
 
 			let largeArc = 0;
-			if(originDiffAngle > 180){
+			if(originDiffAngle >= 180){
 				largeArc = 1;
 			}
 
