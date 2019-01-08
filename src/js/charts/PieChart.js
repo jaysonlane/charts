@@ -116,7 +116,7 @@ export default class PieChart extends BaseChart {
 			});
 			if(init){
 				this.elements_to_animate.push([{unit: slice, array: this.slices, index: this.slices.length - 1},
-					{d:this.makeArcPath(startPosition,endPosition)},
+					{d:this.makeArcPath(startPosition,endPosition, largeArc)},
 					650, "easein",null,{
 						d:curPath
 					}]);
