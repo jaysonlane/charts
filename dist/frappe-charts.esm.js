@@ -126,6 +126,8 @@ function getBarHeightAndYAttr(yTop, zeroLine, totalHeight) {
 	return [height, y];
 }
 
+// Constants used
+
 function $$1(expr, con) {
 	return typeof expr === "string"? (con || document).querySelector(expr) : expr || null;
 }
@@ -2415,9 +2417,9 @@ class PieChart extends BaseChart {
 			y:Math.cos(angle * ANGLE_RATIO) * radius,
 		};
 	}
-	makeArcPath(startPosition,endPosition){
+	makeArcPath(startPosition,endPosition,largeArc){
 		const{centerX,centerY,radius,clockWise} = this;
-		return `M${centerX} ${centerY} L${centerX+startPosition.x} ${centerY+startPosition.y} A ${radius} ${radius} 0 0 ${clockWise ? 1 : 0} ${centerX+endPosition.x} ${centerY+endPosition.y} z`;
+		return `M${centerX} ${centerY} L${centerX+startPosition.x} ${centerY+startPosition.y} A ${radius} ${radius} 0 ${largeArc} ${clockWise ? 1 : 0} ${centerX+endPosition.x} ${centerY+endPosition.y} z`;
 	}
 	make_graph_components(init){
 		const{radius,clockWise} = this;
@@ -2430,6 +2432,12 @@ class PieChart extends BaseChart {
 		this.slice_totals.map((total, i) => {
 			const startAngle = curAngle;
 			const originDiffAngle = (total / this.grand_total) * FULL_ANGLE;
+
+			let largeArc = 0;
+			if(originDiffAngle >= 180){
+				largeArc = 1;
+			}
+
 			const diffAngle = clockWise ? -originDiffAngle : originDiffAngle;
 			const endAngle = curAngle = curAngle + diffAngle;
 			const startPosition = PieChart.getPositionByAngle(startAngle,radius);
@@ -2443,7 +2451,7 @@ class PieChart extends BaseChart {
 				curStart = startPosition;
 				curEnd = endPosition;
 			}
-			const curPath = this.makeArcPath(curStart,curEnd);
+			const curPath = this.makeArcPath(curStart, curEnd, largeArc);
 			let slice = makePath(curPath, 'pie-path', 'none', this.colors[i]);
 			slice.style.transition = 'transform .3s;';
 			this.draw_area.appendChild(slice);
@@ -2460,7 +2468,7 @@ class PieChart extends BaseChart {
 			});
 			if(init){
 				this.elements_to_animate.push([{unit: slice, array: this.slices, index: this.slices.length - 1},
-					{d:this.makeArcPath(startPosition,endPosition)},
+					{d:this.makeArcPath(startPosition,endPosition, largeArc)},
 					650, "easein",null,{
 						d:curPath
 					}]);
@@ -2854,6 +2862,14 @@ class Heatmap extends BaseChart {
 		this.bind_tooltip();
 	}
 }
+
+// if ("development" !== 'production') {
+// 	// Enable LiveReload
+// 	document.write(
+// 		'<script src="http://' + (location.host || 'localhost').split(':')[0] +
+// 		':35729/livereload.js?snipver=1"></' + 'script>'
+// 	);
+// }
 
 const chartTypes = {
 	line: LineChart,
