@@ -126,8 +126,6 @@ function getBarHeightAndYAttr(yTop, zeroLine, totalHeight) {
 	return [height, y];
 }
 
-// Constants used
-
 function $$1(expr, con) {
 	return typeof expr === "string"? (con || document).querySelector(expr) : expr || null;
 }
@@ -2419,12 +2417,47 @@ class PieChart extends BaseChart {
 	}
 	makeArcPath(startPosition,endPosition,largeArc){
 		const{centerX,centerY,radius,clockWise} = this;
-		return `M${centerX} ${centerY} L${centerX+startPosition.x} ${centerY+startPosition.y} A ${radius} ${radius} 0 ${largeArc} ${clockWise ? 1 : 0} ${centerX+endPosition.x} ${centerY+endPosition.y} z`;
+		return `M${centerX} ${centerY} 
+				L${centerX+startPosition.x} ${centerY+startPosition.y}
+				A ${radius} ${radius} 0 ${largeArc} ${clockWise ? 1 : 0} 
+				${centerX+endPosition.x} ${centerY+endPosition.y} z`;
 	}
+
+	makeArcPathStr(startPosition, endPosition, largeArc=0){
+		const{centerX,centerY,radius,clockWise} = this;
+		let width = radius / 3;
+		let [arcStartX, arcStartY] = [centerX + startPosition.x, centerY + startPosition.y];
+		let [smallArcStartX, smallArcStartY] = [centerX + startPosition.x * (radius - width)/ radius,
+			centerY + startPosition.y * (radius - width)/ radius];
+		let [smallArcEndX, smallArcEndY] = [centerX + endPosition.x * (radius - width)/ radius,
+			centerY + endPosition.y * (radius - width)/ radius];
+		let [arcEndX, arcEndY] = [centerX + endPosition.x, centerY + endPosition.y];
+		return `M${arcStartX} ${arcStartY}
+			A ${radius} ${radius} 0 ${largeArc} ${clockWise ? 1 : 0} ${arcEndX} ${arcEndY}
+			L${smallArcEndX} ${smallArcEndY}
+			A ${radius - width} ${radius - width} 0 ${largeArc} ${clockWise ? 0: 1}
+			${smallArcStartX} ${smallArcStartY} z`;
+	}
+
+	makeSimpleDonut(){
+		const{centerX,centerY,radius} = this;
+		let width = radius / 3;
+		return `M${centerX} ${centerY}
+			m${-radius},0
+			a ${radius} ${radius},0 1,0 ${2 * radius},0
+			a ${radius} ${radius} 0 1,0 ${-2 * radius},0
+			z
+			M${centerX} ${centerY}
+			m${width - radius},0
+			a${radius - width} ${radius - width},0 0,1 ${2*(radius - width)},0
+			a${radius - width} ${radius - width},0 0,1 ${2*(width - radius)},0
+			z`;
+	}
+
 	make_graph_components(init){
 		const{radius,clockWise} = this;
 		this.grand_total = this.slice_totals.reduce((a, b) => a + b, 0);
-		const prevSlicesProperties = this.slicesProperties || [];
+		// const prevSlicesProperties = this.slicesProperties || [];
 		this.slices = [];
 		this.elements_to_animate = [];
 		this.slicesProperties = [];
@@ -2433,25 +2466,20 @@ class PieChart extends BaseChart {
 			const startAngle = curAngle;
 			const originDiffAngle = (total / this.grand_total) * FULL_ANGLE;
 
-			let largeArc = 0;
-			if(originDiffAngle >= 180){
-				largeArc = 1;
-			}
+			let largeArc = originDiffAngle > 180 ? 1 : 0;
 
 			const diffAngle = clockWise ? -originDiffAngle : originDiffAngle;
 			const endAngle = curAngle = curAngle + diffAngle;
 			const startPosition = PieChart.getPositionByAngle(startAngle,radius);
 			const endPosition = PieChart.getPositionByAngle(endAngle,radius);
-			const prevProperty = init && prevSlicesProperties[i];
-			let curStart,curEnd;
-			if(init){
-				curStart = prevProperty?prevProperty.startPosition : startPosition;
-				curEnd = prevProperty? prevProperty.endPosition : startPosition;
+
+			let curPath;
+			if (this.slice_totals.length < 2){
+				curPath = this.makeSimpleDonut();
 			}else{
-				curStart = startPosition;
-				curEnd = endPosition;
+				curPath = this.makeArcPathStr(startPosition, endPosition, largeArc);
 			}
-			const curPath = this.makeArcPath(curStart, curEnd, largeArc);
+
 			let slice = makePath(curPath, 'pie-path', 'none', this.colors[i]);
 			slice.style.transition = 'transform .3s;';
 			this.draw_area.appendChild(slice);
@@ -2467,8 +2495,15 @@ class PieChart extends BaseChart {
 				angle:diffAngle
 			});
 			if(init){
+				let newPath;
+				if(this.slice_totals.length < 2){
+					newPath = this.makeSimpleDonut();
+				}else{
+					newPath = this.makeArcPathStr(startPosition, endPosition, largeArc);
+				}
+
 				this.elements_to_animate.push([{unit: slice, array: this.slices, index: this.slices.length - 1},
-					{d:this.makeArcPath(startPosition,endPosition, largeArc)},
+					{d:newPath},
 					650, "easein",null,{
 						d:curPath
 					}]);
@@ -2862,14 +2897,6 @@ class Heatmap extends BaseChart {
 		this.bind_tooltip();
 	}
 }
-
-// if ("development" !== 'production') {
-// 	// Enable LiveReload
-// 	document.write(
-// 		'<script src="http://' + (location.host || 'localhost').split(':')[0] +
-// 		':35729/livereload.js?snipver=1"></' + 'script>'
-// 	);
-// }
 
 const chartTypes = {
 	line: LineChart,
